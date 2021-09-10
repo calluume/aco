@@ -1,21 +1,25 @@
-import aco
+import time
+from aco import aco
 import tkinter as tk
+import numpy as np
 
 class paramWindow:
     def __init__(self):
         self.param_window = tk.Tk()
         self.inputs = {}
         self.parameters = []
+        self.valid_params = False
 
         self.param_window.title('ACO')
 
-    def add_parameter(self, paramId, dataType, valRange=None, label="Parameter"):
+    def add_parameter(self, paramId, dataType, default, valRange=None, label="Parameter"):
         self.inputs[paramId] = {
             'label': label,
             'entry': None,
             'value': None,
             'valRange': valRange,
-            'dataType': dataType
+            'dataType': dataType,
+            'default': default
         }
         
     def display_window(self):
@@ -38,6 +42,7 @@ class paramWindow:
             frame = tk.Frame(master=self.param_window)
             frame.grid(row=self.rows, column=1, padx=10, pady=5)
             input_dict['entry'] = tk.Entry(master=frame, width=10)
+            input_dict['entry'].insert(0, input_dict['default'])
             input_dict['entry'].pack()
             
             self.rows += 1
@@ -49,6 +54,7 @@ class paramWindow:
         self.submit_btn.bind("<Button-1>", self.submit_values)
 
         self.param_window.mainloop()
+        return self.parameters
 
     def update_values(self):
         for key in self.inputs.keys():
@@ -99,17 +105,111 @@ class paramWindow:
         if not failed:
             self.status.config(fg='green')
             self.status_text.set("Done!")
+            self.param_window.after(2000, self.param_window.destroy)
         else:
             self.status.config(fg='red')
             self.parameters = []
-       
+
+class mainWindow:
+    def __init__(self, parameters):
+        self.columns = parameters[0]
+        self.rows = parameters[1]
+        self.ants = parameters[2]
+        self.food = parameters[3]
+        self.speed = parameters[4]
+
+        self.aco = aco((self.rows, self.columns), self.ants, self.food, home_coors=[int(self.rows/2), int(self.columns/2)])
+        
+        self.grid = []
+        
+        self.running = False
+
+    def display(self):
+        self.main_window = tk.Tk()
+
+        for y in range(self.rows):
+            row = []
+            for x in range(self.columns):
+                frame = tk.Frame(master=self.main_window, width=10, height=10, bg='blue')
+                frame.grid(row=y, column=x, padx=1, pady=1)
+                row.append(frame)
+            self.grid.append(row)
+
+        frame = tk.Frame(master=self.main_window)
+        frame.grid(row=self.rows+1, padx=10, pady=20, columnspan = self.columns)
+        self.submit_btn = tk.Button(master=frame, text="Start", width=10)
+        self.submit_btn.pack()
+        self.submit_btn.bind("<Button-1>", self.start_aco)
+
+        frame = tk.Frame(master=self.main_window)
+        frame.grid(row=self.rows+2, padx=10, pady=20, columnspan = self.columns)
+        self.submit_btn = tk.Button(master=frame, text="End", width=10)
+        self.submit_btn.pack()
+        self.submit_btn.bind("<Button-1>", self.start_aco)
+
+        self.main_window.mainloop()
+
+    def start_aco(self, event):
+        """
+        for ant in self.aco.ants:
+            ant_coors = ant.location
+            self.grid[ant_coors[0]][ant_coors[1]].config(bg='red')
+            """
+        self.running = True
+        self.main_window.after(100, self.update_aco)
+
+    def end_aco(self, event):
+        self.running = False
+
+    def update_aco(self):
+        if self.running:
+            for x in range(self.columns):
+                for y in range(self.rows):
+                    colour = get_colour((self.aco.pheromones[x][y]-1)/50, [(255, 255, 255), (0, 0, 0)])
+                    self.grid[x][y].config(bg=colour)
+            for ant in self.aco.ants:
+                ant_coors = ant.location
+                self.grid[ant_coors[0]][ant_coors[1]].config(bg='red')
+
+            home_coors = self.aco.home_coors
+            self.grid[home_coors[0]][home_coors[1]].config(bg='blue')
+
+            for food_key in self.aco.food.keys():
+                food = self.aco.food[food_key].location
+                self.grid[food[0]][food[1]].config(bg='green')
+            
+            self.aco.increment()
+            self.main_window.after(100, self.update_aco)
+        
+            
+def get_colour(progress, colours):
+    """
+    Interpolates between colours by a given percent.
+    :param progress: Value 0 <= x <= 1 of how far to interpolate
+    :param colours:  List of 2 colours to interpolate betweeen
+    :return str:     Hex code of final colour
+    """
+    if progress >= 0 and progress <= 1:
+        start_colour, end_colour = colours[0], colours[1]
+
+        r = start_colour[0] + (end_colour[0] - start_colour[0]) * progress
+        b = start_colour[1] + (end_colour[1] - start_colour[1]) * progress
+        g = start_colour[2] + (end_colour[2] - start_colour[2]) * progress
+
+        return '#%02x%02x%02x' % (round(r), round(b), round(g))
+    
+    else: return '#000000'
+
 if __name__ == "__main__":
 
-    app = paramWindow()
-    app.add_parameter('x', dataType=int, label='Rows:',  valRange=[0, 100])
-    app.add_parameter('y', dataType=int, label='Columns:',  valRange=[0, 100])
-    app.add_parameter('ants', dataType=int, label='Number of ants:',  valRange=[0, 100])
-    app.add_parameter('food', dataType=int, label='Amount of food:',  valRange=[0, 20])
-    app.add_parameter('other', dataType=bool, label='Boolean:')
+    param_input = paramWindow()
+    param_input.add_parameter('x', dataType=int, default=25, label='Rows:',  valRange=[0, 100])
+    param_input.add_parameter('y', dataType=int, default=25, label='Columns:',  valRange=[0, 100])
+    param_input.add_parameter('ants', dataType=int, default=25, label='Number of ants:',  valRange=[0, 100])
+    param_input.add_parameter('food', dataType=int, default=5, label='Amount of food:',  valRange=[0, 20])
+    param_input.add_parameter('speed', dataType=float, default=100, label='Simulation Speed (%):',  valRange=[10, 500])
 
-    app.display_window()
+    parameters = param_input.display_window()
+    
+    main = mainWindow(parameters)
+    main.display()

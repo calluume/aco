@@ -4,7 +4,7 @@ import time
 
 movements = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
 
-class ACO:
+class aco:
     def __init__(self, dimensions, no_ants, no_food, home_coors=[0,0], alpha=10, beta=1, random_ants=False, verbose=False):
         self.ants = []
         self.food = {}
@@ -12,8 +12,8 @@ class ACO:
         self.pheromones = np.full(dimensions, 1.0, dtype=float)
         self.home_coors = home_coors
         self.brought_food = 0
-        self.evapouration_coefficient = 0.1
-        self.pheromone_deposit = 100.0
+        self.evapouration_coefficient = 0.08
+        self.pheromone_deposit = 300.0
         self.alpha = alpha
         self.beta = beta
 
@@ -48,24 +48,25 @@ class ACO:
     def start_aco(self):
         self.print_grid()
         while(True):
-            self.move_ants()
-            self.print_grid()#ant_char='🐜', food_char='🍎')
-            
-            self.ant_grid, self.food_grid = self.get_object_grids()
-            #print(self.pheromones)
-            
-            total_food = 0
-            for key in self.food.keys():
-                total_food += self.food[key].food_val
-            
-            if total_food == 0:
-                break
-            else:
-                print(self.brought_food, total_food)
+
+            self.increment()
+            self.print_grid()
+
+
             time.sleep(0.5)
 
             
         print("done")
+
+    def increment(self):
+        self.move_ants()
+        self.ant_grid, self.food_grid = self.get_object_grids()
+        total_food = 0
+
+        for key in self.food.keys():
+            total_food += self.food[key].food_val
+            
+        
 
 
     def move_ants(self):
@@ -214,5 +215,5 @@ class Food:
     
 
 if __name__ == "__main__":
-    aco = ACO((20, 20), 25, 10, home_coors=[10, 10])
-    aco.start_aco()
+    acoApp = aco((20, 20), 25, 10, home_coors=[10, 10])
+    acoApp.start_aco()
