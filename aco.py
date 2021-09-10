@@ -5,15 +5,16 @@ import time
 movements = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
 
 class aco:
-    def __init__(self, dimensions, no_ants, no_food, home_coors=[0,0], alpha=10, beta=1, random_ants=False, verbose=False):
+    def __init__(self, dimensions, no_ants, no_food, carry_capacity=3, food_capacity=10, home_coors=[0,0], alpha=10, beta=1, random_ants=False, verbose=False):
         self.ants = []
         self.food = {}
         self.dimensions = dimensions
         self.pheromones = np.full(dimensions, 1.0, dtype=float)
         self.home_coors = home_coors
+        self.all_food = no_food*food_capacity
         self.brought_food = 0
-        self.evapouration_coefficient = 0.08
-        self.pheromone_deposit = 300.0
+        self.evapouration_coefficient = 0.02
+        self.pheromone_deposit = 1000.0
         self.alpha = alpha
         self.beta = beta
 
@@ -22,10 +23,10 @@ class aco:
             exit()
 
         food_coors = [self.home_coors]
-        while len(food_coors) < no_food:
+        while len(food_coors) < (no_food + 1):
             coors = [rnd.randint(0, dimensions[0]-1), rnd.randint(0, dimensions[1]-1)]
             if coors not in food_coors:
-                self.food[str(coors[0])+","+str(coors[1])] = Food(coors)
+                self.food[str(coors[0])+","+str(coors[1])] = Food(coors, food_capacity)
                 food_coors.append(coors)
 
         if random_ants:
@@ -33,7 +34,7 @@ class aco:
             while len(ant_coors) < no_ants:
                 coors = [rnd.randint(0, dimensions[0]-1), rnd.randint(0, dimensions[1]-1)]
                 if coors not in ant_coors and coors not in food_coors:
-                    self.ants.append(Ant(coors))
+                    self.ants.append(Ant(coors, carry_capacity=carry_capacity))
                     ant_coors.append(coors)
 
         else:
@@ -49,13 +50,12 @@ class aco:
         self.print_grid()
         while(True):
 
+            if self.is_finished():
+                break
             self.increment()
             self.print_grid()
-
-
             time.sleep(0.5)
 
-            
         print("done")
 
     def increment(self):
@@ -65,9 +65,15 @@ class aco:
 
         for key in self.food.keys():
             total_food += self.food[key].food_val
-            
         
+        return total_food
+        
+    def is_finished(self):
+        carried_food = 0
+        for ant in self.ants:
+            carried_food += ant.current_carry
 
+        return (self.all_food == self.brought_food) or (carried_food == 0 and len(self.food.keys()) == 0)
 
     def move_ants(self):
         for ant in self.ants:
@@ -86,12 +92,15 @@ class aco:
                     ant.current_carry += 1
                     if self.food[taboo_key].food_val > 1:
                         self.food[taboo_key].food_val -= 1
-                    else: self.food[taboo_key].food_val = 0
+                    else: 
+                        #self.food[taboo_key].food_val = 0
+                        _ = self.food.pop(taboo_key)
                 elif ant.location == self.home_coors:
                     self.brought_food += ant.current_carry
                     ant.current_carry = 0
                 
-                self.pheromones[x][y] += self.pheromone_deposit
+                if ant.current_carry == ant.carry_capacity:
+                    self.pheromones[x][y] += self.pheromone_deposit
             self.ant_grid, self.food_grid = self.get_object_grids()
             self.update_pheromones()
 
@@ -144,6 +153,13 @@ class aco:
                         else: mov_weights.append(self.pheromones[centre[0]+i][centre[1]+j])
                     else: mov_weights.append(0)
                 else: mov_weights.append(0)
+
+        if ant.current_carry == ant.carry_capacity or (len(self.food.keys()) == 0):
+            for i in range(len(mov_weights)):
+                possible_move_location = [centre[0]+movements[i][0], centre[1]+movements[i][1]]
+                if self.manhattan(possible_move_location) > self.manhattan(centre):
+                    mov_weights[i] = 0
+                elif mov_weights[i] > 0: mov_weights[i] = 1
 
         """
         if sum(mov_weights) == 0:
@@ -209,10 +225,10 @@ class Ant:
         self.current_carry = 0
 
 class Food:
-    def __init__(self, location, food_val=100):
+    def __init__(self, location, food_capacity=10):
         self.location = location
-        self.food_val = 10
-    
+        self.food_val = food_capacity
+        self.food_capacity = food_capacity
 
 if __name__ == "__main__":
     acoApp = aco((20, 20), 25, 10, home_coors=[10, 10])

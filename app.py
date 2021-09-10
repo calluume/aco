@@ -105,7 +105,7 @@ class paramWindow:
         if not failed:
             self.status.config(fg='green')
             self.status_text.set("Done!")
-            self.param_window.after(2000, self.param_window.destroy)
+            self.param_window.after(1000, self.param_window.destroy)
         else:
             self.status.config(fg='red')
             self.parameters = []
@@ -115,10 +115,10 @@ class mainWindow:
         self.columns = parameters[0]
         self.rows = parameters[1]
         self.ants = parameters[2]
-        self.food = parameters[3]
-        self.speed = parameters[4]
+        self.food = parameters[4]
+        self.speed = parameters[6]
 
-        self.aco = aco((self.rows, self.columns), self.ants, self.food, home_coors=[int(self.rows/2), int(self.columns/2)])
+        self.aco = aco((self.rows, self.columns), self.ants, self.food, carry_capacity=parameters[3], food_capacity=parameters[5], home_coors=[int(self.rows/2), int(self.columns/2)])
         
         self.grid = []
         
@@ -126,26 +126,39 @@ class mainWindow:
 
     def display(self):
         self.main_window = tk.Tk()
+        self.status_text = tk.StringVar()
+        self.status_text.set("Click start to run the simulation.")
+
+        self.grid_frame = tk.Frame(master=self.main_window, relief=tk.RAISED,  borderwidth=1)
+        self.grid_frame.grid(padx=10, pady=10)
 
         for y in range(self.rows):
             row = []
             for x in range(self.columns):
-                frame = tk.Frame(master=self.main_window, width=10, height=10, bg='blue')
+                frame = tk.Frame(master=self.grid_frame, width=10, height=10, bg='blue')
                 frame.grid(row=y, column=x, padx=1, pady=1)
                 row.append(frame)
             self.grid.append(row)
 
         frame = tk.Frame(master=self.main_window)
-        frame.grid(row=self.rows+1, padx=10, pady=20, columnspan = self.columns)
+        frame.grid(padx=10, pady=5, columnspan = self.columns)
+        self.status = tk.Label(master=frame, textvariable=self.status_text)
+        self.status.pack()
+
+        frame = tk.Frame(master=self.main_window)
+        frame.grid(padx=10, pady=5, columnspan = self.columns)
         self.submit_btn = tk.Button(master=frame, text="Start", width=10)
         self.submit_btn.pack()
         self.submit_btn.bind("<Button-1>", self.start_aco)
 
         frame = tk.Frame(master=self.main_window)
-        frame.grid(row=self.rows+2, padx=10, pady=20, columnspan = self.columns)
+        frame.grid(padx=10, pady=5, columnspan = self.columns)
         self.submit_btn = tk.Button(master=frame, text="End", width=10)
         self.submit_btn.pack()
         self.submit_btn.bind("<Button-1>", self.start_aco)
+
+        frame = tk.Frame(master=self.main_window, width=10, height=15)
+        frame.grid(columnspan = self.columns)
 
         self.main_window.mainloop()
 
@@ -176,11 +189,16 @@ class mainWindow:
 
             for food_key in self.aco.food.keys():
                 food = self.aco.food[food_key].location
-                self.grid[food[0]][food[1]].config(bg='green')
+                self.grid[food[0]][food[1]].config(bg=get_colour(self.aco.food[food_key].food_val/self.aco.food[food_key].food_capacity, [(184, 232, 182), (55, 144, 52)]))
             
-            self.aco.increment()
-            self.main_window.after(100, self.update_aco)
-        
+            total_food = self.aco.increment()
+            brought_food = self.aco.brought_food
+            if not self.aco.is_finished():
+                self.status_text.set("Total: "+str(total_food)+", brought: "+str(brought_food))
+                self.main_window.after(100, self.update_aco)
+            else:
+                self.status.config(fg='green')
+                self.status_text.set("Simulation complete!")
             
 def get_colour(progress, colours):
     """
@@ -206,7 +224,9 @@ if __name__ == "__main__":
     param_input.add_parameter('x', dataType=int, default=25, label='Rows:',  valRange=[0, 100])
     param_input.add_parameter('y', dataType=int, default=25, label='Columns:',  valRange=[0, 100])
     param_input.add_parameter('ants', dataType=int, default=25, label='Number of ants:',  valRange=[0, 100])
-    param_input.add_parameter('food', dataType=int, default=5, label='Amount of food:',  valRange=[0, 20])
+    param_input.add_parameter('carry', dataType=int, default=3, label='Ant carry capacity:',  valRange=[1, 10])
+    param_input.add_parameter('food', dataType=int, default=10, label='Amount of food:',  valRange=[1, 20])
+    param_input.add_parameter('fsize', dataType=int, default=10, label='Size of food',  valRange=[1, 20])
     param_input.add_parameter('speed', dataType=float, default=100, label='Simulation Speed (%):',  valRange=[10, 500])
 
     parameters = param_input.display_window()
