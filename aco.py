@@ -5,12 +5,15 @@ import time
 movements = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
 
 class aco:
-    def __init__(self, dimensions, no_ants, no_food, carry_capacity=3, food_capacity=10, home_coors=[0,0], pheromone_deposit=1000.0, evaporation_coefficient=0.02, alpha=10, beta=1, food_deplete=True, random_ant_colour=False, verbose=False):
+    def __init__(self, dimensions, no_ants, no_food, carry_capacity=3, food_capacity=10, home_coors=None, pheromone_deposit=1000.0, evaporation_coefficient=0.02, alpha=10, beta=1, food_deplete=True, random_ant_colour=False, verbose=False):
         self.ants = []
         self.food = {}
         self.dimensions = dimensions
         self.pheromones = np.full(dimensions, 1.0, dtype=float)
-        self.home_coors = home_coors
+        if home_coors != None:  
+            self.home_coors = home_coors
+        else:
+            self.home_coors = [int(dimensions[0]/2), int(dimensions[1]/2)]
         self.all_food = no_food*food_capacity
         self.brought_food = 0
         self.evaporation_coefficient = 0.02
@@ -280,5 +283,5 @@ class Food:
         self.food_capacity = food_capacity
 
 if __name__ == "__main__":
-    acoApp = aco((20, 20), 25, 3, home_coors=[10, 10])
+    acoApp = aco((20, 20), 25, 10)
     acoApp.start_aco()

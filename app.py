@@ -10,7 +10,7 @@ class paramWindow:
         self.parameters = {}
         self.valid_params = False
 
-        self.param_window.title('ACO')
+        self.param_window.title('ACO Simulator')
 
     def add_parameter(self, paramId, dataType, default, valRange=None, label="Parameter"):
         """
@@ -160,6 +160,7 @@ class mainWindow:
         Displays the main simulation window.
         """
         self.main_window = tk.Tk()
+        self.main_window.title('ACO Simulator')
         self.status_text = tk.StringVar()
         self.status_text.set("Click start to run the simulation.")
 
