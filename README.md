@@ -55,4 +55,3 @@ parameters = param_input.display_window()
 main = mainWindow(parameters)
 main.display()
 ```
-![Simulation Grid](simulation_grid.png?raw=true "Simulation Grid")
