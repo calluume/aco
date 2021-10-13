@@ -33,6 +33,7 @@ ants.start_aco()
 ```
 
 ## Window Version
+
 The window version displays the simulation using Tkinter, and includes a window with parameter inputs.
 ```python
 # Creates a parameter input window object.
@@ -55,3 +56,10 @@ parameters = param_input.display_window()
 main = mainWindow(parameters)
 main.display()
 ```
+
+## Future Updates
+
+Some features that could be added in the future:
+- Obstacles for ants to travel around.
+- Different pheromone types for travelling to food and home. This should fix the issue where ants follow others who have found food and are travelling to the home coors.
+- A GUI made in Unity could allow for much larger grid sizes.
